@@ -1,11 +1,11 @@
 """
 Planner Creator Module
 
-This module creates professional digital planners using Claude API for design
+This module creates professional digital planners using AI for design
 and reportlab for PDF generation. Creates print-ready PDFs with preview images.
 
 Features:
-- Claude API integration for planner design and layout
+- Multi-provider AI support (Claude, Gemini, OpenAI) with automatic fallback
 - Print-ready PDF generation (8.5x11 inch, 300 DPI)
 - Professional formatting with graphics and styling
 - Preview image generation for product listings
@@ -26,6 +26,7 @@ import calendar
 
 # Third-party imports
 import anthropic
+from anthropic import APIError, RateLimitError, APITimeoutError
 from dotenv import load_dotenv
 import yaml
 from PIL import Image, ImageDraw, ImageFont
@@ -35,6 +36,22 @@ from reportlab.lib.colors import HexColor, black, white
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
+
+# Try to import Gemini (optional)
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    logger.warning("google-generativeai not installed. Gemini provider not available.")
+
+# Try to import OpenAI (optional)
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    logger.warning("openai not installed. OpenAI provider not available.")
 
 # Configure logging
 logging.basicConfig(
@@ -55,7 +72,7 @@ class PlannerCreator:
 
     def __init__(self, config_path: str = "config.yaml"):
         """
-        Initialize the PlannerCreator.
+        Initialize the PlannerCreator with multi-provider AI support.
 
         Args:
             config_path: Path to configuration YAML file
@@ -63,21 +80,60 @@ class PlannerCreator:
         # Load environment variables
         load_dotenv()
 
-        # Initialize Anthropic client
-        api_key = os.getenv('ANTHROPIC_API_KEY')
-        if not api_key:
-            raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
-
-        self.anthropic_client = anthropic.Anthropic(api_key=api_key)
-
         # Load configuration
         self.config = self._load_config(config_path)
+
+        # Initialize AI providers
+        self.ai_providers = {}
+        self._initialize_ai_providers()
+
+        # Set up provider preference order from config
+        content_gen_config = self.config.get('content_generation', {})
+        self.preferred_provider = content_gen_config.get('preferred_model', 'anthropic')
+        self.fallback_provider = content_gen_config.get('fallback_model', 'gemini')
 
         # Set up output directory
         self.output_dir = Path("output/planners")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info("PlannerCreator initialized successfully")
+        logger.info(f"PlannerCreator initialized with providers: {list(self.ai_providers.keys())}")
+        logger.info(f"Provider preference: {self.preferred_provider} (fallback: {self.fallback_provider})")
+
+    def _initialize_ai_providers(self):
+        """Initialize all available AI providers."""
+        # Initialize Anthropic (Claude)
+        anthropic_key = os.getenv('ANTHROPIC_API_KEY')
+        if anthropic_key and anthropic_key != 'your_anthropic_api_key_here':
+            try:
+                self.ai_providers['anthropic'] = anthropic.Anthropic(api_key=anthropic_key)
+                logger.info("✓ Anthropic (Claude) provider initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Anthropic provider: {e}")
+
+        # Initialize Gemini
+        if GEMINI_AVAILABLE:
+            gemini_key = os.getenv('GEMINI_API_KEY')
+            if gemini_key and gemini_key != 'your_gemini_api_key_here':
+                try:
+                    genai.configure(api_key=gemini_key)
+                    self.ai_providers['gemini'] = genai.GenerativeModel('gemini-pro')
+                    logger.info("✓ Gemini provider initialized")
+                except Exception as e:
+                    logger.warning(f"Failed to initialize Gemini provider: {e}")
+
+        # Initialize OpenAI (optional)
+        if OPENAI_AVAILABLE:
+            openai_key = os.getenv('OPENAI_API_KEY')
+            if openai_key and openai_key != 'your_openai_api_key_here':
+                try:
+                    openai.api_key = openai_key
+                    self.ai_providers['openai'] = openai
+                    logger.info("✓ OpenAI provider initialized")
+                except Exception as e:
+                    logger.warning(f"Failed to initialize OpenAI provider: {e}")
+
+        if not self.ai_providers:
+            raise ValueError("No AI providers available. Please configure at least one API key.")
 
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from YAML file."""
@@ -96,67 +152,193 @@ class PlannerCreator:
     def create_planner(self, planner_type: str, aesthetic: str,
                        retry_attempts: int = 3) -> Dict[str, Any]:
         """
-        Generate planner design using Claude API.
+        Generate planner design using AI with automatic provider fallback.
 
         Args:
             planner_type: Type of planner (e.g., "daily", "weekly", "budget")
             aesthetic: Visual aesthetic (e.g., "minimalist", "floral", "professional")
-            retry_attempts: Number of retry attempts for API calls
+            retry_attempts: Number of retry attempts per provider
 
         Returns:
             Dictionary containing complete planner design specifications
         """
         logger.info(f"Creating {aesthetic} {planner_type} planner design")
 
-        # Build the prompt for Claude
-        prompt = self._build_design_prompt(planner_type, aesthetic)
+        # Build provider order: preferred, fallback, then any remaining
+        provider_order = []
+        if self.preferred_provider in self.ai_providers:
+            provider_order.append(self.preferred_provider)
+        if self.fallback_provider in self.ai_providers and self.fallback_provider not in provider_order:
+            provider_order.append(self.fallback_provider)
+        # Add any other available providers
+        for provider in self.ai_providers:
+            if provider not in provider_order:
+                provider_order.append(provider)
 
-        # Call Claude API with retry logic
+        logger.info(f"Provider order: {provider_order}")
+
+        # Try each provider in order
+        last_error = None
+        for provider_name in provider_order:
+            logger.info(f"Attempting to use {provider_name} provider...")
+
+            try:
+                design_spec = self._generate_with_provider(
+                    provider_name, planner_type, aesthetic, retry_attempts
+                )
+
+                logger.info(f"✓ Successfully created planner design using {provider_name}")
+                return design_spec
+
+            except Exception as e:
+                logger.warning(f"✗ {provider_name} provider failed: {e}")
+                last_error = e
+                continue
+
+        # All providers failed
+        error_msg = f"All AI providers failed. Last error: {last_error}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+
+    def _generate_with_provider(self, provider_name: str, planner_type: str,
+                                aesthetic: str, retry_attempts: int) -> Dict[str, Any]:
+        """Generate planner design using a specific AI provider."""
+        # Build provider-specific prompt
+        prompt = self._build_design_prompt(planner_type, aesthetic, provider_name)
+
+        if provider_name == 'anthropic':
+            return self._generate_with_anthropic(prompt, planner_type, aesthetic, retry_attempts)
+        elif provider_name == 'gemini':
+            return self._generate_with_gemini(prompt, planner_type, aesthetic, retry_attempts)
+        elif provider_name == 'openai':
+            return self._generate_with_openai(prompt, planner_type, aesthetic, retry_attempts)
+        else:
+            raise ValueError(f"Unknown provider: {provider_name}")
+
+    def _generate_with_anthropic(self, prompt: str, planner_type: str,
+                                 aesthetic: str, retry_attempts: int) -> Dict[str, Any]:
+        """Generate planner design using Anthropic Claude."""
+        client = self.ai_providers['anthropic']
+
         for attempt in range(retry_attempts):
             try:
-                message = self.anthropic_client.messages.create(
+                message = client.messages.create(
                     model="claude-3-5-sonnet-20241022",
                     max_tokens=4000,
                     temperature=0.8,
-                    messages=[{
-                        "role": "user",
-                        "content": prompt
-                    }]
+                    messages=[{"role": "user", "content": prompt}]
                 )
 
-                # Extract response
                 response_text = message.content[0].text
-
-                # Parse JSON response
                 design_spec = self._parse_design_response(response_text)
 
-                # Add metadata
                 design_spec['metadata'] = {
                     'planner_type': planner_type,
                     'aesthetic': aesthetic,
                     'created_at': datetime.now().isoformat(),
+                    'provider': 'anthropic',
                     'model': message.model,
                     'tokens_used': message.usage.input_tokens + message.usage.output_tokens
                 }
 
-                logger.info(f"Successfully created planner design (tokens: {design_spec['metadata']['tokens_used']})")
                 return design_spec
 
-            except anthropic.APIError as e:
-                logger.error(f"Anthropic API error (attempt {attempt + 1}/{retry_attempts}): {e}")
+            except (APIError, RateLimitError, APITimeoutError) as e:
                 if attempt < retry_attempts - 1:
-                    wait_time = 2 ** attempt  # Exponential backoff
-                    logger.info(f"Retrying in {wait_time} seconds...")
+                    wait_time = 2 ** attempt
+                    logger.info(f"Anthropic retry in {wait_time}s...")
                     time.sleep(wait_time)
                 else:
                     raise
-            except Exception as e:
-                logger.error(f"Unexpected error: {e}")
-                raise
 
-    def _build_design_prompt(self, planner_type: str, aesthetic: str) -> str:
-        """Build the prompt for Claude API to generate planner design."""
-        return f"""Design a comprehensive {planner_type} planner with a {aesthetic} aesthetic.
+    def _generate_with_gemini(self, prompt: str, planner_type: str,
+                              aesthetic: str, retry_attempts: int) -> Dict[str, Any]:
+        """Generate planner design using Google Gemini."""
+        model = self.ai_providers['gemini']
+
+        for attempt in range(retry_attempts):
+            try:
+                response = model.generate_content(
+                    prompt,
+                    generation_config={
+                        'temperature': 0.8,
+                        'max_output_tokens': 4000,
+                    }
+                )
+
+                response_text = response.text
+                design_spec = self._parse_design_response(response_text)
+
+                design_spec['metadata'] = {
+                    'planner_type': planner_type,
+                    'aesthetic': aesthetic,
+                    'created_at': datetime.now().isoformat(),
+                    'provider': 'gemini',
+                    'model': 'gemini-pro',
+                    'tokens_used': 'N/A'  # Gemini doesn't always provide token counts
+                }
+
+                return design_spec
+
+            except Exception as e:
+                if attempt < retry_attempts - 1:
+                    wait_time = 2 ** attempt
+                    logger.info(f"Gemini retry in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    raise
+
+    def _generate_with_openai(self, prompt: str, planner_type: str,
+                              aesthetic: str, retry_attempts: int) -> Dict[str, Any]:
+        """Generate planner design using OpenAI."""
+        client = self.ai_providers['openai']
+
+        for attempt in range(retry_attempts):
+            try:
+                response = client.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.8,
+                    max_tokens=4000
+                )
+
+                response_text = response.choices[0].message.content
+                design_spec = self._parse_design_response(response_text)
+
+                design_spec['metadata'] = {
+                    'planner_type': planner_type,
+                    'aesthetic': aesthetic,
+                    'created_at': datetime.now().isoformat(),
+                    'provider': 'openai',
+                    'model': response.model,
+                    'tokens_used': response.usage.total_tokens
+                }
+
+                return design_spec
+
+            except Exception as e:
+                if attempt < retry_attempts - 1:
+                    wait_time = 2 ** attempt
+                    logger.info(f"OpenAI retry in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    raise
+
+    def _build_design_prompt(self, planner_type: str, aesthetic: str, provider: str = 'anthropic') -> str:
+        """Build provider-optimized prompt for planner design generation."""
+
+        # Provider-specific prompt optimization
+        if provider == 'gemini':
+            # Gemini prefers more structured, step-by-step instructions
+            instruction_style = "Follow these steps carefully to"
+        elif provider == 'openai':
+            # OpenAI GPT-4 works well with role-based prompts
+            instruction_style = "As an expert planner designer, please"
+        else:  # anthropic/claude
+            # Claude prefers direct, task-oriented prompts
+            instruction_style = "Please"
+
+        return f"""{instruction_style} design a comprehensive {planner_type} planner with a {aesthetic} aesthetic.
 
 Create a complete 12-month planner with the following specifications:
 
