@@ -1,2 +1,58 @@
-# Python Dependencies
-# Add your project dependencies here
+# ==========================================
+# Digital Product Factory - Dependencies
+# ==========================================
+
+# AI & API Integration
+# --------------------
+google-generativeai==0.8.3        # Gemini API for content generation
+google-ai-generativelanguage==0.6.10  # Additional Google AI support
+
+# Web Scraping & HTTP
+# --------------------
+requests==2.32.3                   # HTTP library for API calls
+beautifulsoup4==4.12.3            # HTML/XML parsing for web scraping
+lxml==5.3.0                       # Fast XML/HTML parser for BeautifulSoup
+html5lib==1.1                     # HTML parser
+
+# Trend Analysis
+# --------------------
+pytrends==4.9.2                   # Google Trends API for trend analysis
+
+# Document Creation
+# --------------------
+python-docx==1.1.2                # Create and modify Word documents
+reportlab==4.2.5                  # PDF generation library
+Pillow==11.0.0                    # Image processing and manipulation
+
+# Web Framework
+# --------------------
+Flask==3.1.0                      # Lightweight web framework
+Werkzeug==3.1.3                   # WSGI utilities for Flask
+Jinja2==3.1.4                     # Template engine for Flask
+
+# OAuth & Authentication
+# --------------------
+requests-oauthlib==2.0.0          # OAuth library for API authentication
+oauthlib==3.2.2                   # OAuth implementation
+
+# Environment & Configuration
+# --------------------
+python-dotenv==1.0.1              # Load environment variables from .env
+
+# Task Scheduling
+# --------------------
+schedule==1.2.2                   # Job scheduling library
+
+# Data Processing & Analysis
+# --------------------
+pandas==2.2.3                     # Data manipulation and analysis
+numpy==2.1.3                      # Numerical computing (pandas dependency)
+pytz==2024.2                      # Timezone support for pandas
+
+# Additional Utilities
+# --------------------
+openpyxl==3.1.5                   # Excel file support for pandas
+python-dateutil==2.9.0            # Date/time parsing utilities
+urllib3==2.2.3                    # HTTP client (requests dependency)
+certifi==2024.8.30                # SSL certificates
+charset-normalizer==3.4.0         # Character encoding detection
