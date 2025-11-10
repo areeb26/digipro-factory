@@ -4,6 +4,7 @@
 
 # AI & API Integration
 # --------------------
+anthropic==0.39.0                  # Anthropic Claude API for AI analysis
 google-generativeai==0.8.3        # Gemini API for content generation
 google-ai-generativelanguage==0.6.10  # Additional Google AI support
 
@@ -38,6 +39,7 @@ oauthlib==3.2.2                   # OAuth implementation
 # Environment & Configuration
 # --------------------
 python-dotenv==1.0.1              # Load environment variables from .env
+PyYAML==6.0.2                     # YAML configuration file parsing
 
 # Task Scheduling
 # --------------------
