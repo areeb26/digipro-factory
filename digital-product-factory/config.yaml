@@ -1,2 +1,413 @@
-# Configuration file
-# Add your configuration settings here
+# ==========================================
+# Digital Product Factory - Configuration
+# ==========================================
+
+# ==========================================
+# Trend Monitoring Settings
+# ==========================================
+trend_monitoring:
+  # Keywords to monitor for trending topics and niches
+  # These will be checked against Google Trends, Etsy searches, etc.
+  keywords:
+    - "digital planner"
+    - "notion template"
+    - "printable"
+    - "journal"
+    - "budget planner"
+    - "meal planner"
+    - "wedding planner"
+    - "business planner"
+    - "student planner"
+    - "fitness tracker"
+    - "habit tracker"
+    - "chatgpt prompts"
+    - "AI prompts"
+    - "social media templates"
+    - "resume template"
+    - "ebook"
+    - "wall art"
+    - "calendar"
+    - "stickers"
+    - "worksheets"
+
+  # Geographic regions to monitor (for localized trends)
+  # Options: US, UK, CA, AU, DE, FR, etc.
+  regions:
+    - "US"
+    - "UK"
+    - "CA"
+
+  # Trend analysis timeframe
+  # Options: now 1-H (past hour), now 4-H, now 1-d, today 1-m, today 3-m, today 12-m
+  timeframe: "today 3-m"
+
+  # Minimum trend score to consider (0-100)
+  min_trend_score: 40
+
+  # How often to check trends (in hours)
+  check_interval_hours: 6
+
+# ==========================================
+# Product Types Configuration
+# ==========================================
+product_types:
+  # Enable/disable specific product types
+  enabled:
+    notion_templates: true
+    digital_planners: true
+    printables: true
+    prompt_packs: true
+    ebooks: false  # Set to true when ready
+    courses: false  # Set to true when ready
+
+  # Notion Templates
+  notion_templates:
+    categories:
+      - "Productivity"
+      - "Business"
+      - "Personal Finance"
+      - "Habit Tracking"
+      - "Project Management"
+      - "Content Calendar"
+      - "CRM"
+      - "Knowledge Base"
+    page_count_range: [5, 20]  # min, max pages
+    include_databases: true
+    include_views: true
+
+  # Digital Planners
+  digital_planners:
+    formats:
+      - "PDF"
+      - "DOCX"
+    categories:
+      - "Daily Planner"
+      - "Weekly Planner"
+      - "Monthly Planner"
+      - "Budget Planner"
+      - "Meal Planner"
+      - "Fitness Planner"
+      - "Wedding Planner"
+    page_count_range: [20, 100]
+    include_hyperlinks: true
+    include_tabs: true
+
+  # Printables
+  printables:
+    formats:
+      - "PDF"
+      - "PNG"
+      - "JPG"
+    sizes:
+      - "A4"
+      - "Letter"
+      - "A5"
+    categories:
+      - "Wall Art"
+      - "Calendars"
+      - "Checklists"
+      - "Worksheets"
+      - "Labels"
+      - "Cards"
+
+  # Prompt Packs (for ChatGPT, Claude, etc.)
+  prompt_packs:
+    formats:
+      - "PDF"
+      - "DOCX"
+      - "TXT"
+    categories:
+      - "Business"
+      - "Marketing"
+      - "Content Creation"
+      - "Coding"
+      - "Education"
+      - "Creative Writing"
+    prompt_count_range: [50, 200]
+
+# ==========================================
+# Target Niches
+# ==========================================
+target_niches:
+  # Primary niches to focus on
+  primary:
+    - name: "Productivity & Organization"
+      keywords: ["planner", "organizer", "productivity", "notion"]
+      demand_level: "high"
+
+    - name: "Business & Entrepreneurship"
+      keywords: ["business", "startup", "entrepreneur", "freelance"]
+      demand_level: "high"
+
+    - name: "Personal Finance"
+      keywords: ["budget", "finance", "money", "savings"]
+      demand_level: "high"
+
+    - name: "Health & Wellness"
+      keywords: ["fitness", "health", "wellness", "meditation"]
+      demand_level: "medium"
+
+    - name: "Education & Learning"
+      keywords: ["student", "study", "teacher", "education"]
+      demand_level: "medium"
+
+  # Secondary niches (explore when primary niches are saturated)
+  secondary:
+    - "Wedding Planning"
+    - "Real Estate"
+    - "Social Media Management"
+    - "Content Creation"
+    - "Travel Planning"
+
+# ==========================================
+# Pricing Strategy
+# ==========================================
+pricing:
+  # Price ranges for different product types (in USD)
+  notion_templates:
+    min: 5.00
+    max: 25.00
+    recommended: 12.00
+
+  digital_planners:
+    min: 8.00
+    max: 35.00
+    recommended: 15.00
+
+  printables:
+    min: 3.00
+    max: 15.00
+    recommended: 5.00
+
+  prompt_packs:
+    min: 10.00
+    max: 30.00
+    recommended: 18.00
+
+  # Pricing strategy
+  strategy: "competitive"  # Options: competitive, premium, budget
+
+  # Bundle pricing (percentage discount)
+  bundle_discount: 20  # 20% off when buying multiple products
+
+  # Launch pricing (percentage discount for new products)
+  launch_discount: 25  # 25% off for first week
+  launch_duration_days: 7
+
+# ==========================================
+# Daily Automation Schedule
+# ==========================================
+automation_schedule:
+  # Enable/disable automation
+  enabled: true
+
+  # Timezone for scheduling (use IANA timezone names)
+  timezone: "America/New_York"
+
+  # Daily tasks and their schedule times (24-hour format)
+  tasks:
+    - name: "Monitor Trends"
+      time: "08:00"
+      enabled: true
+      description: "Check Google Trends and Etsy trends for emerging opportunities"
+
+    - name: "Generate Product Ideas"
+      time: "09:00"
+      enabled: true
+      description: "Use AI to generate product ideas based on trending topics"
+
+    - name: "Create Products"
+      time: "10:00"
+      enabled: true
+      description: "Automatically create 1-3 digital products"
+      max_products_per_run: 3
+
+    - name: "Generate Marketing Content"
+      time: "14:00"
+      enabled: true
+      description: "Create product descriptions, titles, tags, and social media posts"
+
+    - name: "Review Queue Check"
+      time: "15:00"
+      enabled: true
+      description: "Send notification if products are waiting for review"
+
+    - name: "Auto-Publish Approved Products"
+      time: "16:00"
+      enabled: false  # Set to true to enable auto-publishing (requires manual review disabled)
+      description: "Automatically publish approved products to platforms"
+
+    - name: "Analytics Report"
+      time: "18:00"
+      enabled: true
+      description: "Generate daily analytics report (views, favorites, sales)"
+
+    - name: "Database Backup"
+      time: "23:00"
+      enabled: true
+      description: "Backup products database"
+
+  # Weekly tasks (day: Monday=0, Sunday=6)
+  weekly_tasks:
+    - name: "Performance Review"
+      day: 0  # Monday
+      time: "09:00"
+      enabled: true
+      description: "Weekly performance analysis and strategy adjustment"
+
+    - name: "Trend Report"
+      day: 0  # Monday
+      time: "10:00"
+      enabled: true
+      description: "Weekly trend analysis report"
+
+# ==========================================
+# API Rate Limits
+# ==========================================
+api_rate_limits:
+  # Google Gemini API
+  gemini:
+    requests_per_minute: 60
+    requests_per_day: 1500
+    retry_attempts: 3
+    retry_delay_seconds: 2
+    timeout_seconds: 30
+
+  # Anthropic Claude API
+  anthropic:
+    requests_per_minute: 50
+    requests_per_day: 1000
+    retry_attempts: 3
+    retry_delay_seconds: 2
+    timeout_seconds: 30
+
+  # Etsy API
+  etsy:
+    requests_per_second: 10
+    requests_per_day: 10000
+    retry_attempts: 3
+    retry_delay_seconds: 5
+    timeout_seconds: 30
+    # Etsy rate limit: 10,000 reads per day, 500 writes per day
+    writes_per_day: 500
+
+  # Gumroad API
+  gumroad:
+    requests_per_minute: 30
+    requests_per_day: 1000
+    retry_attempts: 3
+    retry_delay_seconds: 3
+    timeout_seconds: 30
+
+  # Google Trends (pytrends)
+  google_trends:
+    requests_per_hour: 100
+    retry_attempts: 5
+    retry_delay_seconds: 10
+    timeout_seconds: 30
+
+  # General settings
+  general:
+    max_concurrent_requests: 5
+    default_timeout: 30
+    enable_caching: true
+    cache_duration_hours: 24
+
+# ==========================================
+# Content Generation Settings
+# ==========================================
+content_generation:
+  # AI model preferences
+  preferred_model: "gemini"  # Options: gemini, anthropic
+  fallback_model: "anthropic"
+
+  # Content parameters
+  product_title:
+    max_length: 140
+    include_keywords: true
+    include_emojis: false
+
+  product_description:
+    min_length: 500
+    max_length: 2000
+    include_features: true
+    include_benefits: true
+    include_use_cases: true
+    tone: "professional"  # Options: professional, casual, friendly, enthusiastic
+
+  tags:
+    max_count: 13  # Etsy allows 13 tags
+    min_count: 10
+    include_long_tail: true
+
+  social_media:
+    platforms: ["Instagram", "Pinterest", "Facebook", "Twitter"]
+    hashtag_count: 10
+    character_limit:
+      twitter: 280
+      instagram: 2200
+      facebook: 5000
+
+# ==========================================
+# Quality Control
+# ==========================================
+quality_control:
+  # Require manual review before publishing
+  manual_review_required: true
+
+  # Automated quality checks
+  checks:
+    - name: "Duplicate Detection"
+      enabled: true
+      description: "Check if similar product already exists"
+
+    - name: "Keyword Relevance"
+      enabled: true
+      description: "Ensure keywords match product content"
+
+    - name: "Image Quality"
+      enabled: true
+      min_resolution: [1000, 1000]  # width, height in pixels
+
+    - name: "Grammar Check"
+      enabled: true
+      description: "Basic grammar and spelling verification"
+
+    - name: "Price Validation"
+      enabled: true
+      description: "Ensure pricing is within configured ranges"
+
+# ==========================================
+# Database Settings
+# ==========================================
+database:
+  # Backup configuration
+  backup:
+    enabled: true
+    frequency: "daily"  # Options: daily, weekly, monthly
+    keep_backups: 30  # Number of backups to retain
+    backup_location: "backups/"
+
+  # Performance settings
+  connection_pool_size: 5
+  query_timeout_seconds: 30
+
+# ==========================================
+# Logging Settings
+# ==========================================
+logging:
+  # Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+
+  # Log format
+  format: "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+
+  # Log files
+  file: "logs/app.log"
+  max_file_size_mb: 10
+  backup_count: 5
+
+  # What to log
+  log_api_calls: true
+  log_database_queries: false
+  log_automation_runs: true
