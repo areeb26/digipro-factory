@@ -28,8 +28,10 @@ Pillow==11.0.0                    # Image processing and manipulation
 # Web Framework
 # --------------------
 Flask==3.1.0                      # Lightweight web framework
+Flask-WTF==1.2.1                  # CSRF protection for Flask
 Werkzeug==3.1.3                   # WSGI utilities for Flask
 Jinja2==3.1.4                     # Template engine for Flask
+WTForms==3.1.1                    # Form validation (Flask-WTF dependency)
 
 # OAuth & Authentication
 # --------------------

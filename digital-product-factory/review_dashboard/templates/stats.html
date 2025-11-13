@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-5 fw-bold">Dashboard Statistics</h1>
+        <p class="lead text-muted">Performance metrics and insights</p>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <i class="bi bi-box text-primary" style="font-size: 2rem;"></i>
+            <h3>{{ stats.total_products }}</h3>
+            <p>Total Products</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <i class="bi bi-shop text-success" style="font-size: 2rem;"></i>
+            <h3>{{ stats.active_listings }}</h3>
+            <p>Active Listings</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <i class="bi bi-eye text-info" style="font-size: 2rem;"></i>
+            <h3>{{ stats.total_views }}</h3>
+            <p>Total Views</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <i class="bi bi-cart-check text-warning" style="font-size: 2rem;"></i>
+            <h3>{{ stats.total_sales }}</h3>
+            <p>Total Sales</p>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue & Conversion -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <i class="bi bi-currency-dollar text-success" style="font-size: 2rem;"></i>
+            <h3>${{ "%.2f"|format(stats.total_revenue) }}</h3>
+            <p>Total Revenue</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <i class="bi bi-percent text-primary" style="font-size: 2rem;"></i>
+            <h3>{{ "%.2f"|format(stats.conversion_rate) }}%</h3>
+            <p>Conversion Rate</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <i class="bi bi-bag-check text-info" style="font-size: 2rem;"></i>
+            <h3>${{ "%.2f"|format(stats.avg_order_value) }}</h3>
+            <p>Avg Order Value</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Product Status Distribution -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Product Status Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products by Status Table -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Products by Status</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th class="text-end">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for status, count in stats.products_by_status.items() %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-secondary">{{ status }}</span>
+                            </td>
+                            <td class="text-end"><strong>{{ count }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Performing Products -->
+{% if stats.top_performing %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-trophy"></i> Top Performing Products</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th class="text-end">Sales</th>
+                            <th class="text-end">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in stats.top_performing %}
+                        <tr>
+                            <td>{{ product.title }}</td>
+                            <td><span class="badge bg-primary">{{ product.type }}</span></td>
+                            <td class="text-end">{{ product.total_sales }}</td>
+                            <td class="text-end">${{ "%.2f"|format(product.total_revenue) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Products -->
+{% if stats.recent_products %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Products</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Niche</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in stats.recent_products %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('product_detail', product_id=product.id) }}">
+                                    {{ product.title }}
+                                </a>
+                            </td>
+                            <td><span class="badge bg-primary">{{ product.type }}</span></td>
+                            <td><span class="badge bg-secondary">{{ product.niche }}</span></td>
+                            <td><span class="badge bg-info">{{ product.status }}</span></td>
+                            <td>{{ product.created_at|datetime }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Top Trends -->
+{% if stats.top_trends %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up-arrow"></i> Top Trends</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Keyword</th>
+                            <th>Category</th>
+                            <th class="text-end">Demand Score</th>
+                            <th class="text-end">Competition</th>
+                            <th>Discovered</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trend in stats.top_trends %}
+                        <tr>
+                            <td><strong>{{ trend.keyword }}</strong></td>
+                            <td>
+                                {% if trend.category %}
+                                <span class="badge bg-secondary">{{ trend.category }}</span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <span class="badge bg-success">{{ trend.demand_score }}</span>
+                            </td>
+                            <td class="text-end">
+                                <span class="badge bg-warning">{{ trend.competition_score if trend.competition_score else '-' }}</span>
+                            </td>
+                            <td>{{ trend.discovered_at|datetime }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Product Status Chart
+    const statusCtx = document.getElementById('statusChart');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ stats.status_chart.labels|tojson }},
+            datasets: [{
+                data: {{ stats.status_chart.values|tojson }},
+                backgroundColor: [
+                    '#6366f1',  // primary
+                    '#8b5cf6',  // secondary
+                    '#10b981',  // success
+                    '#f59e0b',  // warning
+                    '#ef4444',  // danger
+                    '#6b7280'   // gray
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                title: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

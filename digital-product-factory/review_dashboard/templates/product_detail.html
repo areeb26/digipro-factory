@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary mb-3">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <h1 class="display-6 fw-bold">{{ product.title }}</h1>
+        <div class="d-flex gap-2 mb-3">
+            <span class="badge bg-primary">{{ product.type }}</span>
+            <span class="badge bg-secondary">{{ product.niche }}</span>
+            <span class="badge bg-info">{{ product.status }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex gap-2 justify-content-center">
+                    <button class="btn btn-success btn-lg" onclick="approveProduct({{ product.id }})">
+                        <i class="bi bi-check-circle"></i> Approve
+                    </button>
+                    <button class="btn btn-warning btn-lg" data-bs-toggle="modal" data-bs-target="#editModal">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                    <button class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                        <i class="bi bi-x-circle"></i> Reject
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Product Information -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Product Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th style="width: 30%;">ID</th>
+                        <td>{{ product.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Type</th>
+                        <td>{{ product.type }}</td>
+                    </tr>
+                    <tr>
+                        <th>Niche</th>
+                        <td>{{ product.niche }}</td>
+                    </tr>
+                    {% if product.price %}
+                    <tr>
+                        <th>Price</th>
+                        <td>${{ "%.2f"|format(product.price) }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>Status</th>
+                        <td><span class="badge bg-info">{{ product.status }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>Created</th>
+                        <td>{{ product.created_at|datetime }}</td>
+                    </tr>
+                    {% if product.updated_at %}
+                    <tr>
+                        <th>Updated</th>
+                        <td>{{ product.updated_at|datetime }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+
+                {% if product.description %}
+                <div class="mt-3">
+                    <h6>Description</h6>
+                    <p class="text-muted">{{ product.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Marketing Content -->
+        {% if marketing %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-megaphone"></i> Marketing Content</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="marketingAccordion">
+                    {% for platform, contents in marketing.items() %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %}"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#marketing{{ loop.index }}">
+                                <i class="bi bi-{{ platform }} me-2"></i>
+                                {{ platform.capitalize() }}
+                            </button>
+                        </h2>
+                        <div id="marketing{{ loop.index }}"
+                             class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
+                             data-bs-parent="#marketingAccordion">
+                            <div class="accordion-body">
+                                {% for item in contents %}
+                                <div class="mb-3">
+                                    <strong>{{ item.type }}</strong>
+                                    <pre class="bg-light p-3 rounded mt-2">{{ item.content }}</pre>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Listings -->
+        {% if listings %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-shop"></i> Listings</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Platform</th>
+                            <th>URL</th>
+                            <th>Views</th>
+                            <th>Sales</th>
+                            <th>Revenue</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for listing in listings %}
+                        <tr>
+                            <td>{{ listing.platform }}</td>
+                            <td>
+                                {% if listing.url %}
+                                <a href="{{ listing.url }}" target="_blank">View <i class="bi bi-box-arrow-up-right"></i></a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>{{ listing.views }}</td>
+                            <td>{{ listing.sales }}</td>
+                            <td>${{ "%.2f"|format(listing.revenue) }}</td>
+                            <td><span class="badge bg-success">{{ listing.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Files Sidebar -->
+    <div class="col-lg-4">
+        <!-- Preview Images -->
+        {% if files.images %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-images"></i> Preview Images ({{ files.images|length }})</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    {% for image in files.images %}
+                    <div class="col-6">
+                        <div class="border rounded p-1">
+                            <small class="text-muted d-block text-truncate">{{ image.name }}</small>
+                            <a href="{{ url_for('download_file', product_id=product.id, filename=image.name) }}"
+                               class="btn btn-sm btn-outline-primary w-100 mt-1">
+                                <i class="bi bi-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- PDF Files -->
+        {% if files.pdfs %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-file-pdf"></i> PDF Files ({{ files.pdfs|length }})</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for pdf in files.pdfs %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <small class="text-truncate">{{ pdf.name }}</small>
+                        <a href="{{ url_for('download_file', product_id=product.id, filename=pdf.name) }}"
+                           class="btn btn-sm btn-primary">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Data Files -->
+        {% if files.data %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-file-earmark-text"></i> Data Files ({{ files.data|length }})</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for data_file in files.data %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <small class="text-truncate">{{ data_file.name }}</small>
+                        <a href="{{ url_for('download_file', product_id=product.id, filename=data_file.name) }}"
+                           class="btn btn-sm btn-primary">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" name="title" value="{{ product.title }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3">{{ product.description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" class="form-control" name="price" step="0.01"
+                               value="{{ product.price if product.price else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Niche</label>
+                        <input type="text" class="form-control" name="niche" value="{{ product.niche }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <input type="text" class="form-control" name="type" value="{{ product.type }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Edit Reason</label>
+                        <textarea class="form-control" name="edit_reason" rows="2"
+                                  placeholder="Explain why you're making these changes..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="saveEdit({{ product.id }})">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reject Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="rejectForm">
+                    <div class="mb-3">
+                        <label class="form-label">Rejection Reason *</label>
+                        <textarea class="form-control" name="reason" rows="4" required
+                                  placeholder="Explain why this product is being rejected..."></textarea>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        This action will archive the product and log the rejection reason.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmReject({{ product.id }})">
+                    Reject Product
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Approve product
+    function approveProduct(productId) {
+        if (!confirm('Are you sure you want to approve this product?')) {
+            return;
+        }
+
+        fetchWithCSRF(`/approve/${productId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Product approved successfully!');
+                window.location.href = '{{ url_for("index") }}';
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while approving the product.');
+        });
+    }
+
+    // Save edits
+    function saveEdit(productId) {
+        const form = document.getElementById('editForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+
+        fetchWithCSRF(`/edit/${productId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Product updated successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the product.');
+        });
+    }
+
+    // Reject product
+    function confirmReject(productId) {
+        const form = document.getElementById('rejectForm');
+        const formData = new FormData(form);
+        const reason = formData.get('reason');
+
+        if (!reason || reason.trim() === '') {
+            alert('Please provide a rejection reason.');
+            return;
+        }
+
+        fetchWithCSRF(`/reject/${productId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Product rejected and archived.');
+                window.location.href = '{{ url_for("index") }}';
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while rejecting the product.');
+        });
+    }
+</script>
+{% endblock %}

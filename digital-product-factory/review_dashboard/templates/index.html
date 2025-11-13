@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-5 fw-bold">Product Review Dashboard</h1>
+        <p class="lead text-muted">Review and approve pending digital products</p>
+    </div>
+</div>
+
+{% if products %}
+<div class="row">
+    {% for product in products %}
+    <div class="col-md-4 col-lg-3 mb-4">
+        <div class="card h-100">
+            {% if product.thumbnail %}
+            <img src="data:image/png;base64,{{ product.thumbnail }}" class="card-img-top" alt="{{ product.title }}"
+                 style="height: 200px; object-fit: cover;">
+            {% else %}
+            <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                 style="height: 200px;">
+                <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
+            </div>
+            {% endif %}
+
+            <div class="card-body">
+                <h5 class="card-title">{{ product.title }}</h5>
+
+                <div class="mb-2">
+                    <span class="badge bg-primary">{{ product.type }}</span>
+                    <span class="badge bg-secondary">{{ product.niche }}</span>
+                </div>
+
+                {% if product.price %}
+                <p class="text-muted mb-2">
+                    <strong>${{ "%.2f"|format(product.price) }}</strong>
+                </p>
+                {% endif %}
+
+                <p class="card-text text-muted small">
+                    <i class="bi bi-clock"></i>
+                    {{ product.created_at|datetime }}
+                </p>
+
+                <div class="d-grid">
+                    <a href="{{ url_for('product_detail', product_id=product.id) }}"
+                       class="btn btn-primary">
+                        <i class="bi bi-eye"></i> Review
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info text-center py-5">
+            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+            <h4 class="mt-3">No Pending Products</h4>
+            <p class="text-muted">All products have been reviewed.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
