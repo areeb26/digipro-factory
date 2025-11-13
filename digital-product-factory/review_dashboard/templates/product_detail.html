@@ -1,125 +1,318 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<style>
+    .product-hero {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+
+    .image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .gallery-image {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+        aspect-ratio: 1;
+    }
+
+    .gallery-image:hover {
+        transform: scale(1.05);
+    }
+
+    .gallery-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .gallery-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(transparent, rgba(0,0,0,0.7));
+        padding: 0.5rem;
+        color: white;
+        font-size: 0.75rem;
+    }
+
+    .editable-field {
+        position: relative;
+        transition: background-color 0.2s;
+    }
+
+    .editable-field:hover {
+        background-color: #f3f4f6;
+        cursor: pointer;
+    }
+
+    .editable-field .edit-icon {
+        position: absolute;
+        right: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .editable-field:hover .edit-icon {
+        opacity: 1;
+    }
+
+    .editing {
+        background-color: #fff7ed !important;
+        border: 2px solid var(--warning-color) !important;
+    }
+
+    .tab-content-card {
+        border: none;
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .nav-tabs {
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .nav-tabs .nav-link {
+        border: none;
+        color: #6b7280;
+        font-weight: 500;
+        padding: 1rem 1.5rem;
+        transition: all 0.3s;
+    }
+
+    .nav-tabs .nav-link:hover {
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+        background: none;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+        background: none;
+    }
+
+    .marketing-content-box {
+        background: #f9fafb;
+        border-left: 4px solid var(--primary-color);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+    }
+
+    .action-buttons {
+        position: sticky;
+        top: 20px;
+        z-index: 100;
+    }
+
+    .file-preview-card {
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .file-preview-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .lightbox {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.9);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .lightbox img {
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+    }
+
+    .lightbox-close {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary mb-3">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
-        </a>
-
-        <h1 class="display-6 fw-bold">{{ product.title }}</h1>
-        <div class="d-flex gap-2 mb-3">
-            <span class="badge bg-primary">{{ product.type }}</span>
-            <span class="badge bg-secondary">{{ product.niche }}</span>
-            <span class="badge bg-info">{{ product.status }}</span>
-        </div>
-    </div>
-</div>
-
-<!-- Action Buttons -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex gap-2 justify-content-center">
-                    <button class="btn btn-success btn-lg" onclick="approveProduct({{ product.id }})">
-                        <i class="bi bi-check-circle"></i> Approve
-                    </button>
-                    <button class="btn btn-warning btn-lg" data-bs-toggle="modal" data-bs-target="#editModal">
-                        <i class="bi bi-pencil"></i> Edit
-                    </button>
-                    <button class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#rejectModal">
-                        <i class="bi bi-x-circle"></i> Reject
-                    </button>
-                </div>
+<!-- Product Hero -->
+<div class="product-hero">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <a href="{{ url_for('index') }}" class="btn btn-light btn-sm mb-3">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+            <h1 class="display-6 fw-bold mb-2 editable-field" data-field="title" data-product-id="{{ product.id }}">
+                {{ product.title }}
+                <i class="bi bi-pencil edit-icon"></i>
+            </h1>
+            <div class="d-flex gap-2 flex-wrap">
+                <span class="badge bg-light text-dark">{{ product.type }}</span>
+                <span class="badge bg-light text-dark">{{ product.niche }}</span>
+                <span class="badge {% if product.status == 'approved' %}bg-success{% elif product.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
+                    {{ product.status }}
+                </span>
             </div>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            {% if product.price %}
+            <h2 class="mb-0 editable-field" data-field="price" data-product-id="{{ product.id }}">
+                ${{ "%.2f"|format(product.price) }}
+                <i class="bi bi-pencil edit-icon"></i>
+            </h2>
+            {% endif %}
+            <small class="opacity-75">Created {{ product.created_at|datetime }}</small>
         </div>
     </div>
 </div>
 
 <div class="row">
-    <!-- Product Information -->
+    <!-- Main Content -->
     <div class="col-lg-8">
+        <!-- Image Gallery -->
+        {% if files.images %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-images"></i> Preview Images</h5>
+            </div>
+            <div class="card-body">
+                <div class="image-gallery">
+                    {% for image in files.images[:6] %}
+                    <div class="gallery-image" onclick="openLightbox('{{ url_for('download_file', product_id=product.id, filename=image.name) }}')">
+                        <img src="{{ url_for('download_file', product_id=product.id, filename=image.name) }}"
+                             alt="{{ image.name }}"
+                             loading="lazy">
+                        <div class="gallery-overlay">{{ image.name }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if files.images|length > 6 %}
+                <p class="text-muted text-center mb-0">
+                    +{{ files.images|length - 6 }} more images available for download
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Product Information -->
         <div class="card mb-4">
             <div class="card-header bg-white">
                 <h5 class="mb-0"><i class="bi bi-info-circle"></i> Product Information</h5>
             </div>
             <div class="card-body">
-                <table class="table">
-                    <tr>
-                        <th style="width: 30%;">ID</th>
-                        <td>{{ product.id }}</td>
-                    </tr>
-                    <tr>
-                        <th>Type</th>
-                        <td>{{ product.type }}</td>
-                    </tr>
-                    <tr>
-                        <th>Niche</th>
-                        <td>{{ product.niche }}</td>
-                    </tr>
-                    {% if product.price %}
-                    <tr>
-                        <th>Price</th>
-                        <td>${{ "%.2f"|format(product.price) }}</td>
-                    </tr>
-                    {% endif %}
-                    <tr>
-                        <th>Status</th>
-                        <td><span class="badge bg-info">{{ product.status }}</span></td>
-                    </tr>
-                    <tr>
-                        <th>Created</th>
-                        <td>{{ product.created_at|datetime }}</td>
-                    </tr>
-                    {% if product.updated_at %}
-                    <tr>
-                        <th>Updated</th>
-                        <td>{{ product.updated_at|datetime }}</td>
-                    </tr>
-                    {% endif %}
-                </table>
-
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">ID</label>
+                        <p>{{ product.id }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Type</label>
+                        <p class="editable-field" data-field="type" data-product-id="{{ product.id }}">
+                            {{ product.type }}
+                            <i class="bi bi-pencil edit-icon"></i>
+                        </p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Niche</label>
+                        <p class="editable-field" data-field="niche" data-product-id="{{ product.id }}">
+                            {{ product.niche }}
+                            <i class="bi bi-pencil edit-icon"></i>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Status</label>
+                        <p><span class="badge bg-info">{{ product.status }}</span></p>
+                    </div>
+                </div>
                 {% if product.description %}
-                <div class="mt-3">
-                    <h6>Description</h6>
-                    <p class="text-muted">{{ product.description }}</p>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-muted small">Description</label>
+                    <p class="editable-field" data-field="description" data-product-id="{{ product.id }}">
+                        {{ product.description }}
+                        <i class="bi bi-pencil edit-icon"></i>
+                    </p>
                 </div>
                 {% endif %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Created</label>
+                        <p>{{ product.created_at|datetime }}</p>
+                    </div>
+                    {% if product.updated_at %}
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted small">Updated</label>
+                        <p>{{ product.updated_at|datetime }}</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
-        <!-- Marketing Content -->
+        <!-- Marketing Content Tabs -->
         {% if marketing %}
         <div class="card mb-4">
             <div class="card-header bg-white">
                 <h5 class="mb-0"><i class="bi bi-megaphone"></i> Marketing Content</h5>
             </div>
-            <div class="card-body">
-                <div class="accordion" id="marketingAccordion">
+            <div class="card-body p-0">
+                <ul class="nav nav-tabs px-3 pt-3" role="tablist">
                     {% for platform, contents in marketing.items() %}
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %}"
-                                    type="button"
-                                    data-bs-toggle="collapse"
-                                    data-bs-target="#marketing{{ loop.index }}">
-                                <i class="bi bi-{{ platform }} me-2"></i>
-                                {{ platform.capitalize() }}
-                            </button>
-                        </h2>
-                        <div id="marketing{{ loop.index }}"
-                             class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
-                             data-bs-parent="#marketingAccordion">
-                            <div class="accordion-body">
-                                {% for item in contents %}
-                                <div class="mb-3">
-                                    <strong>{{ item.type }}</strong>
-                                    <pre class="bg-light p-3 rounded mt-2">{{ item.content }}</pre>
-                                </div>
-                                {% endfor %}
+                    <li class="nav-item">
+                        <button class="nav-link {% if loop.first %}active{% endif %}"
+                                data-bs-toggle="tab"
+                                data-bs-target="#tab-{{ loop.index }}"
+                                type="button">
+                            <i class="bi bi-{{ platform }}"></i>
+                            {{ platform.capitalize() }}
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <div class="tab-content p-3">
+                    {% for platform, contents in marketing.items() %}
+                    <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="tab-{{ loop.index }}">
+                        {% for item in contents %}
+                        <div class="marketing-content-box">
+                            <strong class="text-primary">{{ item.type }}</strong>
+                            <div class="mt-2">
+                                {% if item.content is mapping %}
+                                <pre class="bg-white p-3 rounded border">{{ item.content|tojson(indent=2) }}</pre>
+                                {% else %}
+                                <div class="bg-white p-3 rounded border">{{ item.content }}</div>
+                                {% endif %}
                             </div>
+                            <small class="text-muted">Created: {{ item.created_at|datetime }}</small>
                         </div>
+                        {% endfor %}
                     </div>
                     {% endfor %}
                 </div>
@@ -131,160 +324,140 @@
         {% if listings %}
         <div class="card mb-4">
             <div class="card-header bg-white">
-                <h5 class="mb-0"><i class="bi bi-shop"></i> Listings</h5>
+                <h5 class="mb-0"><i class="bi bi-shop"></i> Published Listings</h5>
             </div>
             <div class="card-body">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Platform</th>
-                            <th>URL</th>
-                            <th>Views</th>
-                            <th>Sales</th>
-                            <th>Revenue</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for listing in listings %}
-                        <tr>
-                            <td>{{ listing.platform }}</td>
-                            <td>
-                                {% if listing.url %}
-                                <a href="{{ listing.url }}" target="_blank">View <i class="bi bi-box-arrow-up-right"></i></a>
-                                {% else %}
-                                -
-                                {% endif %}
-                            </td>
-                            <td>{{ listing.views }}</td>
-                            <td>{{ listing.sales }}</td>
-                            <td>${{ "%.2f"|format(listing.revenue) }}</td>
-                            <td><span class="badge bg-success">{{ listing.status }}</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Platform</th>
+                                <th>URL</th>
+                                <th class="text-end">Views</th>
+                                <th class="text-end">Sales</th>
+                                <th class="text-end">Revenue</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for listing in listings %}
+                            <tr>
+                                <td><span class="badge bg-primary">{{ listing.platform }}</span></td>
+                                <td>
+                                    {% if listing.url %}
+                                    <a href="{{ listing.url }}" target="_blank" class="text-decoration-none">
+                                        View <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">{{ listing.views }}</td>
+                                <td class="text-end">{{ listing.sales }}</td>
+                                <td class="text-end">${{ "%.2f"|format(listing.revenue) }}</td>
+                                <td><span class="badge bg-success">{{ listing.status }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         {% endif %}
     </div>
 
-    <!-- Files Sidebar -->
+    <!-- Sidebar -->
     <div class="col-lg-4">
-        <!-- Preview Images -->
-        {% if files.images %}
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-images"></i> Preview Images ({{ files.images|length }})</h6>
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-lightning"></i> Actions</h6>
+                </div>
+                <div class="card-body d-grid gap-2">
+                    <button class="btn btn-success btn-lg" onclick="approveProduct({{ product.id }})">
+                        <i class="bi bi-check-circle"></i> Approve Product
+                    </button>
+                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                        <i class="bi bi-x-circle"></i> Reject Product
+                    </button>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="row g-2">
-                    {% for image in files.images %}
-                    <div class="col-6">
-                        <div class="border rounded p-1">
-                            <small class="text-muted d-block text-truncate">{{ image.name }}</small>
-                            <a href="{{ url_for('download_file', product_id=product.id, filename=image.name) }}"
-                               class="btn btn-sm btn-outline-primary w-100 mt-1">
-                                <i class="bi bi-download"></i> Download
+
+            <!-- PDF Files -->
+            {% if files.pdfs %}
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-file-pdf"></i> PDF Files ({{ files.pdfs|length }})</h6>
+                </div>
+                <div class="card-body">
+                    {% for pdf in files.pdfs %}
+                    <div class="file-preview-card border rounded p-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1 text-truncate">
+                                <i class="bi bi-file-pdf-fill text-danger"></i>
+                                <small>{{ pdf.name }}</small>
+                            </div>
+                            <a href="{{ url_for('download_file', product_id=product.id, filename=pdf.name) }}"
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-download"></i>
                             </a>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
-        </div>
-        {% endif %}
+            {% endif %}
 
-        <!-- PDF Files -->
-        {% if files.pdfs %}
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-file-pdf"></i> PDF Files ({{ files.pdfs|length }})</h6>
-            </div>
-            <div class="card-body">
-                <div class="list-group list-group-flush">
-                    {% for pdf in files.pdfs %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <small class="text-truncate">{{ pdf.name }}</small>
-                        <a href="{{ url_for('download_file', product_id=product.id, filename=pdf.name) }}"
-                           class="btn btn-sm btn-primary">
-                            <i class="bi bi-download"></i>
-                        </a>
-                    </div>
-                    {% endfor %}
+            <!-- Data Files -->
+            {% if files.data %}
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-file-earmark-text"></i> Data Files ({{ files.data|length }})</h6>
                 </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Data Files -->
-        {% if files.data %}
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-file-earmark-text"></i> Data Files ({{ files.data|length }})</h6>
-            </div>
-            <div class="card-body">
-                <div class="list-group list-group-flush">
+                <div class="card-body">
                     {% for data_file in files.data %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <small class="text-truncate">{{ data_file.name }}</small>
-                        <a href="{{ url_for('download_file', product_id=product.id, filename=data_file.name) }}"
-                           class="btn btn-sm btn-primary">
-                            <i class="bi bi-download"></i>
-                        </a>
+                    <div class="file-preview-card border rounded p-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1 text-truncate">
+                                <i class="bi bi-file-earmark-code text-info"></i>
+                                <small>{{ data_file.name }}</small>
+                            </div>
+                            <a href="{{ url_for('download_file', product_id=product.id, filename=data_file.name) }}"
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-download"></i>
+                            </a>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
-        </div>
-        {% endif %}
-    </div>
-</div>
+            {% endif %}
 
-<!-- Edit Modal -->
-<div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Product</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <!-- All Images -->
+            {% if files.images %}
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-images"></i> All Images ({{ files.images|length }})</h6>
+                </div>
+                <div class="card-body">
+                    {% for image in files.images %}
+                    <div class="file-preview-card border rounded p-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1 text-truncate">
+                                <i class="bi bi-image text-success"></i>
+                                <small>{{ image.name }}</small>
+                            </div>
+                            <a href="{{ url_for('download_file', product_id=product.id, filename=image.name) }}"
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-download"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
-            <div class="modal-body">
-                <form id="editForm">
-                    <div class="mb-3">
-                        <label class="form-label">Title</label>
-                        <input type="text" class="form-control" name="title" value="{{ product.title }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" name="description" rows="3">{{ product.description }}</textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Price</label>
-                        <input type="number" class="form-control" name="price" step="0.01"
-                               value="{{ product.price if product.price else '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Niche</label>
-                        <input type="text" class="form-control" name="niche" value="{{ product.niche }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Type</label>
-                        <input type="text" class="form-control" name="type" value="{{ product.type }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Edit Reason</label>
-                        <textarea class="form-control" name="edit_reason" rows="2"
-                                  placeholder="Explain why you're making these changes..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning" onclick="saveEdit({{ product.id }})">
-                    Save Changes
-                </button>
-            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -319,13 +492,109 @@
         </div>
     </div>
 </div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <span class="lightbox-close">&times;</span>
+    <img id="lightboxImage" src="" alt="Preview">
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Inline editing
+    document.querySelectorAll('.editable-field').forEach(field => {
+        field.addEventListener('click', function() {
+            if (this.classList.contains('editing')) return;
+
+            const fieldName = this.dataset.field;
+            const productId = this.dataset.productId;
+            const currentValue = this.textContent.trim().replace('$', '');
+
+            this.classList.add('editing');
+            const isTextarea = fieldName === 'description';
+
+            if (isTextarea) {
+                const textarea = document.createElement('textarea');
+                textarea.className = 'form-control';
+                textarea.value = currentValue;
+                textarea.rows = 4;
+                this.innerHTML = '';
+                this.appendChild(textarea);
+                textarea.focus();
+
+                textarea.addEventListener('blur', () => saveField(this, fieldName, productId, textarea.value));
+                textarea.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.classList.remove('editing');
+                        this.textContent = currentValue;
+                    }
+                });
+            } else {
+                const input = document.createElement('input');
+                input.type = fieldName === 'price' ? 'number' : 'text';
+                input.className = 'form-control';
+                input.value = currentValue;
+                input.step = fieldName === 'price' ? '0.01' : undefined;
+                this.innerHTML = '';
+                this.appendChild(input);
+                input.focus();
+                input.select();
+
+                input.addEventListener('blur', () => saveField(this, fieldName, productId, input.value));
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        input.blur();
+                    } else if (e.key === 'Escape') {
+                        this.classList.remove('editing');
+                        this.textContent = currentValue;
+                    }
+                });
+            }
+        });
+    });
+
+    function saveField(element, fieldName, productId, newValue) {
+        const data = {
+            [fieldName]: newValue,
+            edit_reason: 'Inline edit from review dashboard'
+        };
+
+        fetchWithCSRF(`/edit/${productId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                element.classList.remove('editing');
+                if (fieldName === 'price') {
+                    element.textContent = '$' + parseFloat(newValue).toFixed(2);
+                } else {
+                    element.textContent = newValue;
+                }
+                element.innerHTML += ' <i class="bi bi-pencil edit-icon"></i>';
+
+                // Show success toast
+                showToast('Field updated successfully', 'success');
+            } else {
+                alert('Error: ' + data.error);
+                element.classList.remove('editing');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the field.');
+            element.classList.remove('editing');
+        });
+    }
+
     // Approve product
     function approveProduct(productId) {
-        if (!confirm('Are you sure you want to approve this product?')) {
+        if (!confirm('Are you sure you want to approve this product for publishing?')) {
             return;
         }
 
@@ -338,8 +607,10 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Product approved successfully!');
-                window.location.href = '{{ url_for("index") }}';
+                showToast('Product approved successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("index") }}';
+                }, 1500);
             } else {
                 alert('Error: ' + data.error);
             }
@@ -347,34 +618,6 @@
         .catch(error => {
             console.error('Error:', error);
             alert('An error occurred while approving the product.');
-        });
-    }
-
-    // Save edits
-    function saveEdit(productId) {
-        const form = document.getElementById('editForm');
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
-
-        fetchWithCSRF(`/edit/${productId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Product updated successfully!');
-                location.reload();
-            } else {
-                alert('Error: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while updating the product.');
         });
     }
 
@@ -399,8 +642,10 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Product rejected and archived.');
-                window.location.href = '{{ url_for("index") }}';
+                showToast('Product rejected and archived.', 'warning');
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("index") }}';
+                }, 1500);
             } else {
                 alert('Error: ' + data.error);
             }
@@ -409,6 +654,32 @@
             console.error('Error:', error);
             alert('An error occurred while rejecting the product.');
         });
+    }
+
+    // Lightbox functions
+    function openLightbox(imageSrc) {
+        document.getElementById('lightboxImage').src = imageSrc;
+        document.getElementById('lightbox').style.display = 'flex';
+    }
+
+    function closeLightbox() {
+        document.getElementById('lightbox').style.display = 'none';
+    }
+
+    // Toast notification
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed top-0 start-50 translate-middle-x mt-3`;
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+            ${message}
+        `;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
     }
 </script>
 {% endblock %}

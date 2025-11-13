@@ -1,6 +1,91 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .search-box {
+        position: relative;
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+    }
+
+    .search-box input {
+        padding-left: 2.5rem;
+    }
+
+    .product-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    .product-card img {
+        transition: transform 0.3s ease;
+    }
+
+    .product-card:hover img {
+        transform: scale(1.05);
+    }
+
+    .filter-badge {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .filter-badge:hover {
+        transform: scale(1.05);
+    }
+
+    .filter-badge.active {
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    }
+
+    .mini-stat-card {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        height: 100%;
+    }
+
+    .mini-stat-card h3 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .mini-stat-card p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 0.875rem;
+    }
+
+    .mini-stat-card i {
+        font-size: 2rem;
+        opacity: 0.8;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+<!-- Header -->
 <div class="row mb-4">
     <div class="col-12">
         <h1 class="display-5 fw-bold">Product Review Dashboard</h1>
@@ -8,60 +93,325 @@
     </div>
 </div>
 
-{% if products %}
-<div class="row">
-    {% for product in products %}
-    <div class="col-md-4 col-lg-3 mb-4">
-        <div class="card h-100">
-            {% if product.thumbnail %}
-            <img src="data:image/png;base64,{{ product.thumbnail }}" class="card-img-top" alt="{{ product.title }}"
-                 style="height: 200px; object-fit: cover;">
-            {% else %}
-            <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
-                 style="height: 200px;">
-                <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
-            </div>
-            {% endif %}
-
-            <div class="card-body">
-                <h5 class="card-title">{{ product.title }}</h5>
-
-                <div class="mb-2">
-                    <span class="badge bg-primary">{{ product.type }}</span>
-                    <span class="badge bg-secondary">{{ product.niche }}</span>
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="mini-stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h3 id="totalCount">{{ products|length }}</h3>
+                    <p>Total Products</p>
                 </div>
+                <i class="bi bi-box"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="mini-stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h3 id="pendingCount">{{ products|selectattr('status', 'equalto', 'pending')|list|length + products|selectattr('status', 'equalto', 'draft')|list|length }}</h3>
+                    <p>Pending Review</p>
+                </div>
+                <i class="bi bi-clock-history"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="mini-stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h3 id="approvedCount">{{ products|selectattr('status', 'equalto', 'approved')|list|length }}</h3>
+                    <p>Approved</p>
+                </div>
+                <i class="bi bi-check-circle"></i>
+            </div>
+        </div>
+    </div>
+</div>
 
-                {% if product.price %}
-                <p class="text-muted mb-2">
-                    <strong>${{ "%.2f"|format(product.price) }}</strong>
-                </p>
+<!-- Filters & Search -->
+<div class="filter-card">
+    <div class="row g-3">
+        <!-- Search -->
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Search</label>
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" id="searchInput"
+                       placeholder="Search products...">
+            </div>
+        </div>
+
+        <!-- Type Filter -->
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Type</label>
+            <select class="form-select" id="typeFilter">
+                <option value="">All Types</option>
+            </select>
+        </div>
+
+        <!-- Niche Filter -->
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Niche</label>
+            <select class="form-select" id="nicheFilter">
+                <option value="">All Niches</option>
+            </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Status</label>
+            <select class="form-select" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="draft">Draft</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                <i class="bi bi-x-circle"></i> Clear Filters
+            </button>
+            <span class="ms-3 text-muted" id="resultCount"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Products Grid -->
+<div class="row" id="productsGrid">
+    {% if products %}
+        {% for product in products %}
+        <div class="col-md-4 col-lg-3 mb-4 product-item"
+             data-type="{{ product.type }}"
+             data-niche="{{ product.niche }}"
+             data-status="{{ product.status }}"
+             data-title="{{ product.title|lower }}"
+             data-description="{{ product.description|lower if product.description else '' }}"
+             data-id="{{ product.id }}">
+            <div class="card h-100 product-card">
+                {% if product.thumbnail %}
+                <div style="overflow: hidden; height: 200px; border-radius: 12px 12px 0 0;">
+                    <img src="data:image/png;base64,{{ product.thumbnail }}"
+                         class="card-img-top"
+                         alt="{{ product.title }}"
+                         style="height: 200px; object-fit: cover; width: 100%;">
+                </div>
+                {% else %}
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                     style="height: 200px; border-radius: 12px 12px 0 0;">
+                    <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
+                </div>
                 {% endif %}
 
-                <p class="card-text text-muted small">
-                    <i class="bi bi-clock"></i>
-                    {{ product.created_at|datetime }}
-                </p>
+                <div class="card-body">
+                    <h5 class="card-title text-truncate" title="{{ product.title }}">{{ product.title }}</h5>
 
-                <div class="d-grid">
-                    <a href="{{ url_for('product_detail', product_id=product.id) }}"
-                       class="btn btn-primary">
-                        <i class="bi bi-eye"></i> Review
-                    </a>
+                    <div class="mb-2">
+                        <span class="badge bg-primary filter-badge" data-filter-type="type" data-value="{{ product.type }}">
+                            {{ product.type }}
+                        </span>
+                        <span class="badge bg-secondary filter-badge" data-filter-type="niche" data-value="{{ product.niche }}">
+                            {{ product.niche }}
+                        </span>
+                    </div>
+
+                    <div class="mb-2">
+                        {% if product.status == 'draft' %}
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-pencil"></i> {{ product.status }}
+                        </span>
+                        {% elif product.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-clock"></i> {{ product.status }}
+                        </span>
+                        {% elif product.status == 'approved' %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> {{ product.status }}
+                        </span>
+                        {% elif product.status == 'published' %}
+                        <span class="badge bg-info">
+                            <i class="bi bi-rocket"></i> {{ product.status }}
+                        </span>
+                        {% else %}
+                        <span class="badge bg-dark">
+                            {{ product.status }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if product.price %}
+                    <p class="text-muted mb-2">
+                        <strong class="text-success">${{ "%.2f"|format(product.price) }}</strong>
+                    </p>
+                    {% endif %}
+
+                    <p class="card-text text-muted small">
+                        <i class="bi bi-clock"></i>
+                        {{ product.created_at|datetime }}
+                    </p>
+
+                    <div class="d-grid">
+                        <a href="{{ url_for('product_detail', product_id=product.id) }}"
+                           class="btn btn-primary">
+                            <i class="bi bi-eye"></i> Review
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    {% endfor %}
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                <h4 class="mt-3">No Pending Products</h4>
+                <p class="text-muted">All products have been reviewed.</p>
+            </div>
+        </div>
+    {% endif %}
 </div>
-{% else %}
-<div class="row">
+
+<!-- No Results Message -->
+<div class="row" id="noResults" style="display: none;">
     <div class="col-12">
-        <div class="alert alert-info text-center py-5">
-            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-            <h4 class="mt-3">No Pending Products</h4>
-            <p class="text-muted">All products have been reviewed.</p>
+        <div class="alert alert-warning text-center py-5">
+            <i class="bi bi-search" style="font-size: 3rem;"></i>
+            <h4 class="mt-3">No Products Found</h4>
+            <p class="text-muted">Try adjusting your filters or search query.</p>
         </div>
     </div>
 </div>
-{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize filters with unique values
+    document.addEventListener('DOMContentLoaded', function() {
+        const products = document.querySelectorAll('.product-item');
+        const types = new Set();
+        const niches = new Set();
+
+        products.forEach(product => {
+            types.add(product.dataset.type);
+            niches.add(product.dataset.niche);
+        });
+
+        // Populate type filter
+        const typeFilter = document.getElementById('typeFilter');
+        Array.from(types).sort().forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+            typeFilter.appendChild(option);
+        });
+
+        // Populate niche filter
+        const nicheFilter = document.getElementById('nicheFilter');
+        Array.from(niches).sort().forEach(niche => {
+            const option = document.createElement('option');
+            option.value = niche;
+            option.textContent = niche.charAt(0).toUpperCase() + niche.slice(1);
+            nicheFilter.appendChild(option);
+        });
+
+        // Update result count
+        updateResultCount();
+
+        // Add event listeners
+        document.getElementById('searchInput').addEventListener('input', filterProducts);
+        document.getElementById('typeFilter').addEventListener('change', filterProducts);
+        document.getElementById('nicheFilter').addEventListener('change', filterProducts);
+        document.getElementById('statusFilter').addEventListener('change', filterProducts);
+
+        // Badge click filters
+        document.querySelectorAll('.filter-badge').forEach(badge => {
+            badge.addEventListener('click', function(e) {
+                e.preventDefault();
+                const filterType = this.dataset.filterType;
+                const value = this.dataset.value;
+
+                if (filterType === 'type') {
+                    document.getElementById('typeFilter').value = value;
+                } else if (filterType === 'niche') {
+                    document.getElementById('nicheFilter').value = value;
+                }
+
+                filterProducts();
+            });
+        });
+    });
+
+    function filterProducts() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const typeFilter = document.getElementById('typeFilter').value;
+        const nicheFilter = document.getElementById('nicheFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+
+        const products = document.querySelectorAll('.product-item');
+        let visibleCount = 0;
+
+        products.forEach(product => {
+            const title = product.dataset.title;
+            const description = product.dataset.description;
+            const type = product.dataset.type;
+            const niche = product.dataset.niche;
+            const status = product.dataset.status;
+
+            const matchesSearch = !searchTerm ||
+                                title.includes(searchTerm) ||
+                                description.includes(searchTerm);
+            const matchesType = !typeFilter || type === typeFilter;
+            const matchesNiche = !nicheFilter || niche === nicheFilter;
+            const matchesStatus = !statusFilter || status === statusFilter;
+
+            const isVisible = matchesSearch && matchesType && matchesNiche && matchesStatus;
+
+            product.style.display = isVisible ? 'block' : 'none';
+            if (isVisible) visibleCount++;
+        });
+
+        // Show/hide no results message
+        document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+        document.getElementById('productsGrid').style.display = visibleCount > 0 ? 'flex' : 'none';
+
+        updateResultCount(visibleCount);
+    }
+
+    function updateResultCount(count) {
+        const total = document.querySelectorAll('.product-item').length;
+        const displayCount = count !== undefined ? count : total;
+        const resultText = displayCount === total
+            ? `Showing all ${total} products`
+            : `Showing ${displayCount} of ${total} products`;
+        document.getElementById('resultCount').textContent = resultText;
+    }
+
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('typeFilter').value = '';
+        document.getElementById('nicheFilter').value = '';
+        document.getElementById('statusFilter').value = '';
+        filterProducts();
+    }
+
+    // Click on card to navigate
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Don't navigate if clicking on a badge or button
+            if (e.target.closest('.filter-badge') || e.target.closest('.btn')) {
+                return;
+            }
+            const link = this.querySelector('a.btn-primary');
+            if (link) {
+                window.location.href = link.href;
+            }
+        });
+    });
+</script>
 {% endblock %}
