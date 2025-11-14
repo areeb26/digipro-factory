@@ -43,9 +43,10 @@ oauthlib==3.2.2                   # OAuth implementation
 python-dotenv==1.0.1              # Load environment variables from .env
 PyYAML==6.0.2                     # YAML configuration file parsing
 
-# Task Scheduling
+# Task Scheduling & CLI
 # --------------------
 schedule==1.2.2                   # Job scheduling library
+click==8.1.7                      # Command-line interface framework
 
 # Data Processing & Analysis
 # --------------------
