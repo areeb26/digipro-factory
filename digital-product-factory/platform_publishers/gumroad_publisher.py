@@ -12,14 +12,31 @@ Features:
 - Set product pricing and variants
 - Update product descriptions and tags
 - Manage product visibility
+- Get sales data and revenue
 - Rate limiting and retry logic
 - Comprehensive error handling
 
 Usage:
     publisher = GumroadPublisher()
-    product_id = publisher.create_product(product_data)
+
+    # Create product
+    result = publisher.create_product({
+        'name': 'My Digital Product',
+        'price': 1000,  # $10.00 in cents
+        'description': 'Product description'
+    })
+    product_id = result['permalink']
+    product_url = result['url']
+
+    # Upload file
     publisher.upload_file(product_id, "path/to/file.pdf")
-    url = publisher.publish_product(product_id)
+
+    # Update product
+    publisher.update_product(product_id, {'price': 1500})
+
+    # Get sales data
+    sales = publisher.get_product_sales(product_id)
+    print(f"Sales: {sales['sales_count']}, Revenue: ${sales['revenue']}")
 """
 
 import os
@@ -216,7 +233,7 @@ class GumroadPublisher:
             logger.error(f"Credential verification failed: {str(e)}")
             raise
 
-    def create_product(self, product_data: Dict[str, Any]) -> str:
+    def create_product(self, product_data: Dict[str, Any]) -> Dict[str, str]:
         """
         Create a new product listing on Gumroad.
 
@@ -231,7 +248,7 @@ class GumroadPublisher:
                 - published (optional): Whether to publish immediately (default: False)
 
         Returns:
-            Product ID (permalink slug)
+            Dictionary with 'url' and 'permalink' keys
 
         Raises:
             ValueError: If required fields are missing
@@ -282,9 +299,15 @@ class GumroadPublisher:
             if result.get('success'):
                 product = result['product']
                 product_id = product['id']
+                product_url = product.get('short_url') or product.get('url') or f"https://gumroad.com/l/{product_id}"
+
                 logger.info(f"Product created successfully with ID: {product_id}")
-                logger.info(f"Product URL: {product.get('short_url', product.get('url', 'N/A'))}")
-                return product_id
+                logger.info(f"Product URL: {product_url}")
+
+                return {
+                    'url': product_url,
+                    'permalink': product_id
+                }
             else:
                 raise ValueError(f"Failed to create product: {result.get('message', 'Unknown error')}")
 
@@ -341,6 +364,52 @@ class GumroadPublisher:
 
         except Exception as e:
             logger.error(f"Failed to update product {product_id}: {str(e)}")
+            raise
+
+    def upload_file(self, product_id: str, file_path: str) -> Dict[str, Any]:
+        """
+        Upload a digital file to an existing product.
+
+        Args:
+            product_id: Product ID (permalink slug)
+            file_path: Path to the file to upload
+
+        Returns:
+            Dictionary with file upload information including file reference
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            requests.exceptions.HTTPError: If upload fails
+        """
+        logger.info(f"Uploading file to product {product_id}: {file_path}")
+
+        file_path_obj = Path(file_path)
+        if not file_path_obj.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        try:
+            with open(file_path, 'rb') as f:
+                files = {'file': (file_path_obj.name, f, 'application/octet-stream')}
+                response = self._make_request(
+                    'POST',
+                    f'/products/{product_id}/file',
+                    files=files
+                )
+
+            result = response.json()
+
+            if result.get('success'):
+                logger.info(f"File uploaded successfully to product {product_id}")
+                return {
+                    'success': True,
+                    'file_name': file_path_obj.name,
+                    'file_reference': result.get('file', {})
+                }
+            else:
+                raise ValueError(f"Failed to upload file: {result.get('message', 'Unknown error')}")
+
+        except Exception as e:
+            logger.error(f"Failed to upload file to product {product_id}: {str(e)}")
             raise
 
     def get_product(self, product_id: str) -> Dict[str, Any]:
@@ -511,7 +580,8 @@ class GumroadPublisher:
         try:
             # Step 1: Create product (as draft)
             product_data['published'] = False
-            product_id = self.create_product(product_data)
+            result = self.create_product(product_data)
+            product_id = result['permalink']
 
             # Step 2: Upload digital file if provided
             if file_path:
@@ -614,6 +684,47 @@ class GumroadPublisher:
             logger.error(f"Failed to get sales: {str(e)}")
             raise
 
+    def get_product_sales(self, product_id: str) -> Dict[str, Any]:
+        """
+        Get sales count and revenue for a specific product.
+
+        Args:
+            product_id: Product ID (permalink slug)
+
+        Returns:
+            Dictionary with:
+                - sales_count: Total number of sales
+                - revenue: Total revenue (in dollars)
+                - currency: Currency code (default: USD)
+
+        Raises:
+            requests.exceptions.HTTPError: If request fails
+        """
+        logger.info(f"Fetching sales statistics for product: {product_id}")
+
+        try:
+            # Get all sales for this product
+            sales = self.get_sales(product_id=product_id)
+
+            # Calculate totals
+            sales_count = len(sales)
+            total_revenue_cents = sum(int(sale.get('price', 0)) for sale in sales)
+            total_revenue = total_revenue_cents / 100.0  # Convert cents to dollars
+
+            result = {
+                'sales_count': sales_count,
+                'revenue': total_revenue,
+                'currency': 'USD'
+            }
+
+            logger.info(f"Product {product_id}: {sales_count} sales, ${total_revenue:.2f} revenue")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Failed to get sales statistics for product {product_id}: {str(e)}")
+            raise
+
 
 def main():
     """
@@ -635,26 +746,40 @@ def main():
         products = publisher.list_products()
         print(f"\n✓ Found {len(products)} existing products")
 
-        # Example: Create a test product (commented out to avoid actually creating)
+        # Example: Simple product creation workflow (commented out to avoid actually creating)
         """
+        # Step 1: Create product
         product_data = {
             'name': 'Test Digital Product',
             'description': 'This is a test product created via API',
-            'price': 1000,  # $10.00
+            'price': 1000,  # $10.00 in cents
             'currency': 'USD',
             'summary': 'Test product for API integration',
             'tags': ['digital', 'test', 'template']
         }
 
-        # Full publish workflow
-        url = publisher.publish_product(
-            product_data=product_data,
-            file_path='path/to/digital-file.pdf',
-            cover_image_path='path/to/cover-image.png'
-        )
+        result = publisher.create_product(product_data)
+        product_id = result['permalink']
+        product_url = result['url']
 
-        print(f"\n✓ Product published successfully!")
-        print(f"  URL: {url}")
+        print(f"\n✓ Product created!")
+        print(f"  Product ID: {product_id}")
+        print(f"  URL: {product_url}")
+
+        # Step 2: Upload file
+        publisher.upload_file(product_id, 'path/to/digital-file.pdf')
+        print(f"  File uploaded successfully")
+
+        # Step 3: Update product (optional)
+        publisher.update_product(product_id, {
+            'price': 1500,  # Change to $15.00
+            'description': 'Updated description'
+        })
+        print(f"  Product updated")
+
+        # Step 4: Get sales data
+        sales = publisher.get_product_sales(product_id)
+        print(f"  Sales: {sales['sales_count']}, Revenue: ${sales['revenue']:.2f}")
         """
 
         print("\n✓ All tests passed!")
